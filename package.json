@@ -1,0 +1,30 @@
+{
+  "name": "info-systems-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "node server/index.js",
+    "client": "vite --config client/vite.config.js --host 127.0.0.1",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "vite build --config client/vite.config.js",
+    "preview": "vite preview --config client/vite.config.js --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "bcryptjs": "^3.0.3",
+    "concurrently": "^8.2.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.21.0",
+    "mongoose": "^8.9.5",
+    "multer": "^2.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^5.4.11"
+  }
+}

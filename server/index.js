@@ -13,6 +13,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const ProductImage = require("./models/ProductImage");
 const { uploadRoot } = require("./utils/localImages");
 
 const app = express();
@@ -33,6 +34,20 @@ function ensureDbReady() {
   }
   return dbReady;
 }
+
+app.get("/uploads/products/:id", async (req, res, next) => {
+  try {
+    await ensureDbReady();
+    const image = await ProductImage.findById(req.params.id);
+    if (!image) return res.status(404).send("Image not found");
+    res.set("Content-Type", image.contentType);
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.send(image.data);
+  } catch (error) {
+    if (error.name === "CastError") return res.status(404).send("Image not found");
+    next(error);
+  }
+});
 
 app.get("/api/health", async (req, res, next) => {
   try {

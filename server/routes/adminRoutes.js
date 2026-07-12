@@ -1,10 +1,10 @@
 const express = require("express");
 const Product = require("../models/Product");
+const ProductImage = require("../models/ProductImage");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const { auth, adminOnly } = require("../middleware/auth");
 const { cleanProduct } = require("../utils/products");
-const { removeProductImage } = require("../utils/localImages");
 
 const router = express.Router();
 
@@ -32,7 +32,11 @@ router.put("/products/:id", async (req, res) => {
 
 router.delete("/products/:id", async (req, res) => {
   const product = await Product.findById(req.params.id);
-  if (product?.imagePublicId) await removeProductImage(product.imagePublicId);
+  if (product?.imagePublicId) {
+    await ProductImage.findByIdAndDelete(product.imagePublicId).catch((error) => {
+      if (error.name !== "CastError") throw error;
+    });
+  }
   await Product.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });

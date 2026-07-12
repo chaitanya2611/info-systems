@@ -13,6 +13,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const carouselRoutes = require("./routes/carouselRoutes");
 const ProductImage = require("./models/ProductImage");
 const { uploadRoot } = require("./utils/localImages");
 
@@ -73,6 +74,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/carousel", carouselRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const distPath = path.join(__dirname, "..", "client", "dist");

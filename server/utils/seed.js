@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Product = require("../models/Product");
+const CarouselSlide = require("../models/CarouselSlide");
 const Order = require("../models/Order");
 const ChatThread = require("../models/ChatThread");
 
@@ -25,6 +26,42 @@ const demoCustomers = [
   { name: "Maya Patel", email: "maya@infosystems.local" }
 ];
 
+const carouselSlides = [
+  {
+    eyebrow: "Exclusive offer",
+    title: "Build-ready desktop deals",
+    body: "Save on gaming and workstation towers with curated accessories for your complete setup.",
+    badge: "Limited stock",
+    buttonLabel: "Shop desktops",
+    buttonRoute: "#products",
+    image: "https://images.unsplash.com/photo-1587831990711-23ca6441447b?auto=format&fit=crop&w=1200&q=80",
+    sortOrder: 1,
+    active: true
+  },
+  {
+    eyebrow: "Student pick",
+    title: "Laptop bundles for study and work",
+    body: "Pair lightweight laptops with mice, hubs, and webcams for a simple everyday kit.",
+    badge: "Bundle value",
+    buttonLabel: "View laptops",
+    buttonRoute: "#products",
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+    sortOrder: 2,
+    active: true
+  },
+  {
+    eyebrow: "Store special",
+    title: "Upgrade your desk display",
+    body: "Monitors, docks, and networking essentials selected for cleaner home and office setups.",
+    badge: "New arrivals",
+    buttonLabel: "Explore offers",
+    buttonRoute: "#products",
+    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80",
+    sortOrder: 3,
+    active: true
+  }
+];
+
 async function seedDatabase() {
   const admin = await upsertUser({ name: "Info Systems Admin", email: "admin@infosystems.local", password: "admin123", role: "admin" });
   const customers = await Promise.all(demoCustomers.map((customer) => upsertUser({ ...customer, password: "customer123", role: "customer" })));
@@ -33,6 +70,14 @@ async function seedDatabase() {
     await Product.updateOne(
       { name: product.name },
       { $set: product, $setOnInsert: { imagePublicId: "" } },
+      { upsert: true }
+    );
+  }
+
+  for (const slide of carouselSlides) {
+    await CarouselSlide.updateOne(
+      { title: slide.title },
+      { $setOnInsert: slide },
       { upsert: true }
     );
   }

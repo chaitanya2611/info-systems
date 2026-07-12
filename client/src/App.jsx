@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, CheckCircle2, CreditCard, Home, ImagePlus, LogIn, LogOut, MessageCircle, Minus, PackagePlus, Plus, Search, Send, ShieldCheck, ShoppingCart, SlidersHorizontal, Star, Truck, UserPlus, X } from "lucide-react";
+import { Boxes, CheckCircle2, ChevronLeft, ChevronRight, CreditCard, Home, ImagePlus, LogIn, LogOut, MessageCircle, Minus, PackagePlus, Plus, Search, Send, ShieldCheck, ShoppingCart, SlidersHorizontal, Star, Truck, UserPlus, X } from "lucide-react";
 import logoUrl from "./assets/logo.jpeg";
 
 const emptyProduct = { name: "", category: "Desktop", mrp: "", price: "", stock: "", image: "", imagePublicId: "", description: "" };
+const emptyCarouselSlide = { eyebrow: "Exclusive offer", title: "", body: "", badge: "", buttonLabel: "Shop now", buttonRoute: "#products", image: "", imagePublicId: "", sortOrder: 1, active: true };
 const routes = new Set(["store", "login", "signup", "orders", "chats", "admin"]);
 
 async function api(path, options = {}) {
@@ -50,6 +51,9 @@ export default function App() {
   const [category, setCategory] = useState("All");
   const [auth, setAuth] = useState({ name: "", email: "", password: "" });
   const [productForm, setProductForm] = useState(emptyProduct);
+  const [carouselSlides, setCarouselSlides] = useState([]);
+  const [slideForm, setSlideForm] = useState(emptyCarouselSlide);
+  const [editingSlideId, setEditingSlideId] = useState("");
   const [editingId, setEditingId] = useState("");
   const [message, setMessage] = useState("");
 
@@ -63,6 +67,7 @@ export default function App() {
     const onHashChange = () => setRoute(getRoute());
     window.addEventListener("hashchange", onHashChange);
     loadProducts();
+    loadCarouselSlides();
     api("/api/me").then((data) => setUser(data.user));
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -120,17 +125,23 @@ export default function App() {
     setProducts(data.products);
   }
 
+  async function loadCarouselSlides() {
+    const data = await api("/api/carousel");
+    setCarouselSlides(data.slides || []);
+  }
+
   async function loadOrders() {
     const data = await api("/api/orders");
     setOrders(data.orders);
   }
 
   async function loadAdmin() {
-    const [summaryData, orderData, chatData] = await Promise.all([api("/api/admin/summary"), api("/api/orders"), api("/api/chats")]);
+    const [summaryData, orderData, chatData, carouselData] = await Promise.all([api("/api/admin/summary"), api("/api/orders"), api("/api/chats"), api("/api/admin/carousel")]);
     setSummary(summaryData.summary);
     setOrders(orderData.orders);
     setChatThreads(chatData.threads || []);
     setActiveChat((current) => current || chatData.threads?.[0] || null);
+    setCarouselSlides(carouselData.slides || []);
   }
 
   async function loadChats() {
@@ -241,21 +252,50 @@ export default function App() {
     notify("Order updated");
   }
 
+  async function saveCarouselSlide(event) {
+    event.preventDefault();
+    const path = editingSlideId ? `/api/admin/carousel/${editingSlideId}` : "/api/admin/carousel";
+    const method = editingSlideId ? "PUT" : "POST";
+    try {
+      await api(path, { method, body: JSON.stringify(slideForm) });
+      setSlideForm(emptyCarouselSlide);
+      setEditingSlideId("");
+      await loadAdmin();
+      await loadCarouselSlides();
+      notify("Carousel saved");
+    } catch (error) {
+      notify(error.message);
+    }
+  }
+
+  async function deleteCarouselSlide(id) {
+    if (!confirm("Delete this carousel slide?")) return;
+    await api(`/api/admin/carousel/${id}`, { method: "DELETE" });
+    await loadAdmin();
+    await loadCarouselSlides();
+    notify("Carousel slide deleted");
+  }
+
+  async function uploadImageFile(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await fetch("/api/upload/product-image", {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Image upload failed");
+    return data;
+  }
+
   async function handleImageUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return notify("Choose an image file.");
     if (file.size > 2_000_000) return notify("Use an image under 2 MB.");
-    const formData = new FormData();
-    formData.append("image", file);
     try {
-      const response = await fetch("/api/upload/product-image", {
-        method: "POST",
-        credentials: "include",
-        body: formData
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Image upload failed");
+      const data = await uploadImageFile(file);
       const nextProduct = { ...productForm, image: data.imageUrl, imagePublicId: data.publicId };
       setProductForm(nextProduct);
       if (editingId) {
@@ -268,6 +308,58 @@ export default function App() {
         notify("Image uploaded and saved");
       } else {
         notify("Image uploaded. Save product to publish it.");
+      }
+    } catch (error) {
+      notify(error.message);
+    }
+  }
+
+  async function handleCarouselImageUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return notify("Choose an image file.");
+    if (file.size > 2_000_000) return notify("Use an image under 2 MB.");
+    try {
+      const data = await uploadImageFile(file);
+      const nextSlide = { ...slideForm, image: data.imageUrl, imagePublicId: data.publicId };
+      setSlideForm(nextSlide);
+      if (editingSlideId) {
+        await api(`/api/admin/carousel/${editingSlideId}`, {
+          method: "PUT",
+          body: JSON.stringify(nextSlide)
+        });
+        await loadAdmin();
+        await loadCarouselSlides();
+        notify("Carousel image uploaded and saved");
+      } else {
+        notify("Carousel image uploaded. Save slide to publish it.");
+      }
+    } catch (error) {
+      notify(error.message);
+    }
+  }
+
+  async function deleteCarouselImage() {
+    const publicId = slideForm.imagePublicId;
+    try {
+      if (publicId) {
+        await api("/api/upload/product-image", {
+          method: "DELETE",
+          body: JSON.stringify({ publicId })
+        });
+      }
+      const nextSlide = { ...slideForm, image: "", imagePublicId: "" };
+      setSlideForm(nextSlide);
+      if (editingSlideId) {
+        await api(`/api/admin/carousel/${editingSlideId}`, {
+          method: "PUT",
+          body: JSON.stringify(nextSlide)
+        });
+        await loadAdmin();
+        await loadCarouselSlides();
+        notify("Carousel image removed and saved");
+      } else {
+        notify("Carousel image removed");
       }
     } catch (error) {
       notify(error.message);
@@ -308,6 +400,7 @@ export default function App() {
         {route === "store" && (
           <StorePage
             products={products}
+            carouselSlides={carouselSlides}
             categories={categories}
             category={category}
             setCategory={setCategory}
@@ -335,6 +428,15 @@ export default function App() {
             setEditingId={setEditingId}
             saveProduct={saveProduct}
             deleteProduct={deleteProduct}
+            carouselSlides={carouselSlides}
+            slideForm={slideForm}
+            setSlideForm={setSlideForm}
+            editingSlideId={editingSlideId}
+            setEditingSlideId={setEditingSlideId}
+            saveCarouselSlide={saveCarouselSlide}
+            deleteCarouselSlide={deleteCarouselSlide}
+            handleCarouselImageUpload={handleCarouselImageUpload}
+            deleteCarouselImage={deleteCarouselImage}
             handleImageUpload={handleImageUpload}
             deleteProductImage={deleteProductImage}
           />
@@ -373,7 +475,7 @@ function Header({ user, route, logout, cartCount }) {
   );
 }
 
-function StorePage({ products, categories, category, setCategory, addToCart, cartLines, cartTotal, cart, setCart, checkout }) {
+function StorePage({ products, carouselSlides, categories, category, setCategory, addToCart, cartLines, cartTotal, cart, setCart, checkout }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("featured");
   const filteredProducts = useMemo(() => {
@@ -390,37 +492,10 @@ function StorePage({ products, categories, category, setCategory, addToCart, car
       return 0;
     });
   }, [category, products, query, sort]);
-  const heroProducts = products.slice(0, 3);
 
   return (
     <>
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Computers, parts, and support</p>
-          <h1>Info Systems</h1>
-          <p>Shop reliable laptops, desktops, monitors, accessories, and networking gear with clear pricing and quick support from one place.</p>
-          <div className="hero-highlights" aria-label="Store highlights">
-            <span>Curated hardware</span>
-            <span>Order tracking</span>
-            <span>Support chat</span>
-          </div>
-          <div className="hero-actions">
-            <a className="primary-btn" href="#products"><ShoppingCart size={18} /> Shop products</a>
-            <button className="secondary-btn" onClick={() => go("signup")}><UserPlus size={18} /> Create account</button>
-          </div>
-        </div>
-        <div className="hero-showcase" aria-label="Featured Info Systems products">
-          {heroProducts.map((product, index) => (
-            <article className={`hero-product hero-product-${index + 1}`} key={product._id}>
-              <ProductVisual image={product.image} />
-              <div>
-                <strong>{product.name}</strong>
-                <span>{money(product.price)}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <OfferCarousel slides={carouselSlides} />
 
       <section className="section-bar">
         <div><Truck size={20} /><strong>Fast pickup</strong><span>Ready-to-ship inventory and quick order updates.</span></div>
@@ -479,6 +554,64 @@ function StorePage({ products, categories, category, setCategory, addToCart, car
         </div>
       </section>
     </>
+  );
+}
+
+function OfferCarousel({ slides }) {
+  const activeSlides = slides.length ? slides : [{
+    eyebrow: "Exclusive offer",
+    title: "Info Systems deals",
+    body: "Shop reliable computers, accessories, and networking gear with clear pricing and quick support.",
+    badge: "Featured",
+    buttonLabel: "Shop products",
+    buttonRoute: "#products",
+    image: ""
+  }];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeSlide = activeSlides[activeIndex] || activeSlides[0];
+
+  useEffect(() => {
+    if (activeSlides.length <= 1) return undefined;
+    const timer = window.setInterval(() => setActiveIndex((index) => (index + 1) % activeSlides.length), 5200);
+    return () => window.clearInterval(timer);
+  }, [activeSlides.length]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [slides]);
+
+  function move(step) {
+    setActiveIndex((index) => (index + step + activeSlides.length) % activeSlides.length);
+  }
+
+  return (
+    <section className="offer-carousel" aria-label="Exclusive products and offers">
+      <div className="offer-copy">
+        <p className="eyebrow">{activeSlide.eyebrow || "Exclusive offer"}</p>
+        <h1>{activeSlide.title}</h1>
+        <p>{activeSlide.body}</p>
+        <div className="offer-meta">
+          {activeSlide.badge && <span>{activeSlide.badge}</span>}
+          <span>Curated by Ishwarpur</span>
+        </div>
+        <div className="hero-actions">
+          <a className="primary-btn" href={activeSlide.buttonRoute || "#products"}><ShoppingCart size={18} /> {activeSlide.buttonLabel || "Shop now"}</a>
+          <button className="secondary-btn" onClick={() => go("signup")}><UserPlus size={18} /> Create account</button>
+        </div>
+      </div>
+      <div className="offer-media">
+        {activeSlide.image ? <img src={activeSlide.image} alt="" /> : <ProductVisual image="" />}
+        <div className="offer-controls" aria-label="Carousel controls">
+          <button className="icon-btn" type="button" aria-label="Previous offer" onClick={() => move(-1)}><ChevronLeft size={18} /></button>
+          <div className="offer-dots">
+            {activeSlides.map((slide, index) => (
+              <button key={slide._id || slide.title || index} type="button" className={index === activeIndex ? "active" : ""} aria-label={`Show offer ${index + 1}`} onClick={() => setActiveIndex(index)} />
+            ))}
+          </div>
+          <button className="icon-btn" type="button" aria-label="Next offer" onClick={() => move(1)}><ChevronRight size={18} /></button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -651,7 +784,28 @@ function CartPanel({ cartLines, cartTotal, cart, setCart, addToCart, checkout })
 }
 
 function AdminPage(props) {
-  const { user, summary, products, productForm, setProductForm, editingId, setEditingId, saveProduct, deleteProduct, handleImageUpload, deleteProductImage } = props;
+  const {
+    user,
+    summary,
+    products,
+    carouselSlides,
+    slideForm,
+    setSlideForm,
+    editingSlideId,
+    setEditingSlideId,
+    saveCarouselSlide,
+    deleteCarouselSlide,
+    handleCarouselImageUpload,
+    deleteCarouselImage,
+    productForm,
+    setProductForm,
+    editingId,
+    setEditingId,
+    saveProduct,
+    deleteProduct,
+    handleImageUpload,
+    deleteProductImage
+  } = props;
   if (user?.role !== "admin") {
     return (
       <section className="auth-page">
@@ -687,6 +841,51 @@ function AdminPage(props) {
           <strong>Chats</strong>
           <span>Open customer conversations on the dedicated support page.</span>
         </button>
+      </div>
+      <div className="panel carousel-admin-panel">
+        <div className="panel-heading"><h3>{editingSlideId ? "Edit carousel offer" : "Add carousel offer"}</h3><ImagePlus size={22} /></div>
+        <div className="carousel-admin-layout">
+          <form className="carousel-form" onSubmit={saveCarouselSlide}>
+            <div className="form-row">
+              <label>Eyebrow<input value={slideForm.eyebrow} onChange={(e) => setSlideForm({ ...slideForm, eyebrow: e.target.value })} /></label>
+              <label>Badge<input value={slideForm.badge} onChange={(e) => setSlideForm({ ...slideForm, badge: e.target.value })} /></label>
+            </div>
+            <label>Title<input value={slideForm.title} onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })} required /></label>
+            <label>Description<textarea value={slideForm.body} onChange={(e) => setSlideForm({ ...slideForm, body: e.target.value })} required /></label>
+            <div className="form-row three-fields">
+              <label>Button text<input value={slideForm.buttonLabel} onChange={(e) => setSlideForm({ ...slideForm, buttonLabel: e.target.value })} /></label>
+              <label>Button link<input value={slideForm.buttonRoute} onChange={(e) => setSlideForm({ ...slideForm, buttonRoute: e.target.value })} placeholder="#products" /></label>
+              <label>Order<input type="number" value={slideForm.sortOrder} onChange={(e) => setSlideForm({ ...slideForm, sortOrder: e.target.value })} /></label>
+            </div>
+            <label>Image path<input value={slideForm.image?.startsWith("http") || slideForm.image?.startsWith("/") ? slideForm.image : ""} placeholder="https://... or /uploads/products/..." onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value, imagePublicId: "" })} /></label>
+            <label>Upload carousel image<input type="file" accept="image/*" onChange={handleCarouselImageUpload} /></label>
+            <label className="toggle-row"><input type="checkbox" checked={slideForm.active} onChange={(e) => setSlideForm({ ...slideForm, active: e.target.checked })} /> Show in store carousel</label>
+            <div className="image-preview carousel-preview">
+              {slideForm.image ? <img src={slideForm.image} alt="" /> : <ProductVisual image="" />}
+              <button className="ghost-btn full remove-image-btn" type="button" onClick={deleteCarouselImage} disabled={!slideForm.image && !slideForm.imagePublicId}>Remove image</button>
+            </div>
+            <div className="form-actions">
+              <button className="primary-btn" type="submit"><ImagePlus size={17} /> Save offer</button>
+              <button className="ghost-btn" type="button" onClick={() => { setSlideForm(emptyCarouselSlide); setEditingSlideId(""); }}>Reset</button>
+            </div>
+          </form>
+          <div className="carousel-slide-list">
+            {carouselSlides.length ? carouselSlides.map((slide) => (
+              <article className="carousel-slide-card" key={slide._id}>
+                {slide.image ? <img src={slide.image} alt="" /> : <ProductVisual image="" />}
+                <div>
+                  <span className="tag">{slide.active ? "Visible" : "Hidden"}</span>
+                  <strong>{slide.title}</strong>
+                  <p>{slide.body}</p>
+                  <div className="form-actions">
+                    <button className="ghost-btn compact" type="button" onClick={() => { setEditingSlideId(slide._id); setSlideForm({ ...emptyCarouselSlide, ...slide }); }}>Edit</button>
+                    <button className="ghost-btn compact danger-btn" type="button" onClick={() => deleteCarouselSlide(slide._id)}>Delete</button>
+                  </div>
+                </div>
+              </article>
+            )) : <div className="empty-state">No carousel offers yet.</div>}
+          </div>
+        </div>
       </div>
       <div className="admin-layout">
         <form className="panel admin-form" onSubmit={saveProduct}>

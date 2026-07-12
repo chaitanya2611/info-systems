@@ -74,6 +74,7 @@ textarea:focus-visible {
 
 .nav,
 .hero,
+.offer-carousel,
 .section-bar,
 .content-section {
   width: min(1240px, calc(100% - 36px));
@@ -276,6 +277,127 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
+}
+
+.offer-carousel {
+  min-height: 560px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+  gap: 42px;
+  align-items: center;
+  padding: 48px 0 72px;
+}
+
+.offer-copy h1 {
+  margin: 10px 0 18px;
+  max-width: 660px;
+  color: var(--ink);
+  font-size: clamp(2.8rem, 6vw, 5.8rem);
+  line-height: 0.98;
+}
+
+.offer-copy p {
+  max-width: 620px;
+  margin: 0;
+  color: #46566b;
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+
+.offer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.offer-meta span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d7e1ec;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.offer-media {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.offer-media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(24, 33, 47, 0.02), rgba(24, 33, 47, 0.36));
+  pointer-events: none;
+}
+
+.offer-media > img,
+.offer-media > .product-visual {
+  width: 100%;
+  height: 430px;
+  min-height: 430px;
+  border: 0;
+}
+
+.offer-media > img,
+.offer-media .product-image {
+  object-fit: cover;
+}
+
+.offer-controls {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(24, 33, 47, 0.76);
+  backdrop-filter: blur(12px);
+}
+
+.offer-controls .icon-btn {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.offer-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+}
+
+.offer-dots button {
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.offer-dots button.active {
+  width: 26px;
+  background: #fff;
 }
 
 .hero-highlights {
@@ -986,6 +1108,76 @@ textarea:focus-visible {
   align-items: start;
 }
 
+.carousel-admin-panel {
+  margin-bottom: 18px;
+}
+
+.carousel-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.carousel-form,
+.carousel-slide-list {
+  display: grid;
+  gap: 14px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-row input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.carousel-preview img,
+.carousel-slide-card > img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  display: block;
+}
+
+.carousel-slide-card {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdff;
+}
+
+.carousel-slide-card > .product-visual {
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.carousel-slide-card > img {
+  height: 150px;
+  border-radius: 8px;
+}
+
+.carousel-slide-card strong {
+  display: block;
+  margin-top: 9px;
+  color: var(--ink);
+  font-size: 1.06rem;
+}
+
+.carousel-slide-card p {
+  margin: 7px 0 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -1191,13 +1383,19 @@ textarea {
 
 @media (max-width: 1100px) {
   .hero,
+  .offer-carousel,
   .shop-layout,
   .admin-layout,
+  .carousel-admin-layout,
   .chat-workspace {
     grid-template-columns: 1fr;
   }
 
   .hero {
+    min-height: auto;
+  }
+
+  .offer-carousel {
     min-height: auto;
   }
 
@@ -1237,8 +1435,17 @@ textarea {
     padding-top: 36px;
   }
 
+  .offer-carousel {
+    gap: 24px;
+    padding: 34px 0 48px;
+  }
+
   .hero h1 {
     font-size: 3.4rem;
+  }
+
+  .offer-copy h1 {
+    font-size: 2.8rem;
   }
 
   .hero-showcase {
@@ -1280,6 +1487,7 @@ textarea {
   .admin-card-grid,
   .admin-inventory-grid,
   .order-modal-summary,
+  .carousel-slide-card,
   .section-bar,
   .inventory-insights,
   .form-row,
@@ -1306,6 +1514,7 @@ textarea {
 @media (max-width: 480px) {
   .nav,
   .hero,
+  .offer-carousel,
   .section-bar,
   .content-section {
     width: min(100% - 24px, 1240px);
@@ -1313,6 +1522,10 @@ textarea {
 
   .hero h1 {
     font-size: 2.8rem;
+  }
+
+  .offer-copy h1 {
+    font-size: 2.35rem;
   }
 
   .hero-product div:last-child {

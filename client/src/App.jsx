@@ -590,10 +590,7 @@ function OfferCarousel({ slides }) {
         <p className="eyebrow">{activeSlide.eyebrow || "Exclusive offer"}</p>
         <h1>{activeSlide.title}</h1>
         <p>{activeSlide.body}</p>
-        <div className="offer-meta">
-          {activeSlide.badge && <span>{activeSlide.badge}</span>}
-          <span>Curated by Ishwarpur</span>
-        </div>
+        {activeSlide.badge && <div className="offer-meta"><span>{activeSlide.badge}</span></div>}
         <div className="hero-actions">
           <a className="primary-btn" href={activeSlide.buttonRoute || "#products"}><ShoppingCart size={18} /> {activeSlide.buttonLabel || "Shop now"}</a>
           <button className="secondary-btn" onClick={() => go("signup")}><UserPlus size={18} /> Create account</button>

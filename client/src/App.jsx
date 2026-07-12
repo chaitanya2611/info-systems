@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, CheckCircle2, ChevronLeft, ChevronRight, CreditCard, Home, ImagePlus, LogIn, LogOut, MessageCircle, Minus, PackagePlus, Plus, Search, Send, ShieldCheck, ShoppingCart, SlidersHorizontal, Star, Truck, UserPlus, X } from "lucide-react";
+import { Boxes, CheckCircle2, ChevronLeft, ChevronRight, Home, ImagePlus, LogIn, LogOut, MessageCircle, Minus, PackagePlus, Plus, Search, Send, ShoppingCart, SlidersHorizontal, UserPlus, X } from "lucide-react";
 import logoUrl from "./assets/logo.jpeg";
 
 const emptyProduct = { name: "", category: "Desktop", mrp: "", price: "", stock: "", image: "", imagePublicId: "", description: "" };
 const emptyCarouselSlide = { eyebrow: "Exclusive offer", title: "", body: "", badge: "", buttonLabel: "Shop now", buttonRoute: "#products", image: "", imagePublicId: "", sortOrder: 1, active: true };
-const routes = new Set(["store", "login", "signup", "orders", "chats", "admin"]);
+const routes = new Set(["store", "cart", "login", "signup", "orders", "chats", "admin"]);
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -412,6 +412,7 @@ export default function App() {
             checkout={checkout}
           />
         )}
+        {route === "cart" && <CartPage cartLines={cartLines} cartTotal={cartTotal} cart={cart} setCart={setCart} addToCart={addToCart} checkout={checkout} />}
         {route === "login" && <AuthPage mode="login" auth={auth} setAuth={setAuth} submitAuth={submitAuth} />}
         {route === "signup" && <AuthPage mode="signup" auth={auth} setAuth={setAuth} submitAuth={submitAuth} />}
         {route === "orders" && <OrdersPage user={user} orders={orders} loadOrders={loadOrders} updateOrder={updateOrder} />}
@@ -460,7 +461,7 @@ function Header({ user, route, logout, cartCount }) {
           {user && <button className={`nav-pill ${route === "orders" ? "active" : ""}`} onClick={() => go("orders")}>Orders</button>}
           {user && <button className={`nav-pill ${route === "chats" ? "active" : ""}`} onClick={() => go("chats")}><MessageCircle size={16} /> Chats</button>}
           {user?.role === "admin" && <button className={`nav-pill ${route === "admin" ? "active" : ""}`} onClick={() => go("admin")}>Admin</button>}
-          <a className="cart-chip" href="#cart"><ShoppingCart size={16} /><span>{cartCount}</span></a>
+          <button className={`cart-chip ${route === "cart" ? "active" : ""}`} type="button" onClick={() => go("cart")}><ShoppingCart size={16} /><span>{cartCount}</span></button>
           {user ? (
             <button className="primary-btn compact" onClick={logout}><LogOut size={17} /> Logout</button>
           ) : (
@@ -492,20 +493,22 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
       return 0;
     });
   }, [category, products, query, sort]);
+  const productShelves = useMemo(() => {
+    const shelves = new Map();
+    filteredProducts.forEach((product) => {
+      const shelfName = product.category || "Featured";
+      shelves.set(shelfName, [...(shelves.get(shelfName) || []), product]);
+    });
+    return Array.from(shelves, ([name, items]) => ({ name, items }));
+  }, [filteredProducts]);
 
   return (
     <>
       <OfferCarousel slides={carouselSlides} />
 
-      <section className="section-bar">
-        <div><Truck size={20} /><strong>Fast pickup</strong><span>Ready-to-ship inventory and quick order updates.</span></div>
-        <div><ShieldCheck size={20} /><strong>Trusted gear</strong><span>Curated hardware for home, study, gaming, and work.</span></div>
-        <div><CreditCard size={20} /><strong>Simple checkout</strong><span>Save orders to your account and track status anytime.</span></div>
-      </section>
-
       <section className="content-section" id="products">
         <div className="section-heading">
-          <div><p className="eyebrow">Featured inventory</p><h2>Computers and accessories</h2></div>
+          <div><p className="eyebrow">Featured inventory</p><h2>Shop by category</h2></div>
           <span className="result-count">{filteredProducts.length} items</span>
         </div>
         <div className="shop-toolbar">
@@ -526,31 +529,34 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
         <div className="filters">
           {categories.map((item) => <button key={item} className={`filter-btn ${category === item ? "active" : ""}`} onClick={() => setCategory(item)}>{item}</button>)}
         </div>
-        <div className="shop-layout">
-          <div className="product-grid">
-            {filteredProducts.length ? filteredProducts.map((product) => (
-              <article className="product-card" key={product._id}>
-                <ProductVisual image={product.image} />
-                <div className="product-body">
-                  <div className="product-meta"><span className="tag">{product.category}</span></div>
-                  <h3>{product.name}</h3>
-                  <p>{product.description}</p>
-                  <div className="product-rating"><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><span>Top pick</span></div>
-                  <div className="product-buy-row">
-                    <div className="price-block">
-                      <span className="price-label">Selling price</span>
-                      <span className="price">{money(product.price)}</span>
-                      {!!product.mrp && <span className="mrp">MRP <s>{money(product.mrp)}</s></span>}
+        <div className="product-shelves">
+          {productShelves.length ? productShelves.map((shelf) => (
+            <section className="category-shelf" key={shelf.name}>
+              <div className="shelf-heading">
+                <h3>{shelf.name}</h3>
+                <span>{shelf.items.length} items</span>
+              </div>
+              <div className="shelf-row">
+                {shelf.items.map((product) => (
+                  <article className="product-card shelf-card" key={product._id}>
+                    <ProductVisual image={product.image} />
+                    <div className="product-body">
+                      <div className="product-meta"><span className="tag">{product.category}</span></div>
+                      <h3>{product.name}</h3>
+                      <p>{product.description}</p>
+                      <div className="product-buy-row">
+                        <div className="price-block">
+                          <span className="price">{money(product.price)}</span>
+                          {!!product.mrp && <span className="mrp"><s>{money(product.mrp)}</s></span>}
+                        </div>
+                        <button className="primary-btn compact" disabled={!product.stock} onClick={() => addToCart(product)}><ShoppingCart size={16} /> Add</button>
+                      </div>
                     </div>
-                    <button className="primary-btn compact" disabled={!product.stock} onClick={() => addToCart(product)}><ShoppingCart size={16} /> Add</button>
-                  </div>
-                </div>
-              </article>
-            )) : <div className="empty-state product-empty">No matching products. Try a different search or category.</div>}
-          </div>
-          <div id="cart" className="cart-rail">
-            <CartPanel cartLines={cartLines} cartTotal={cartTotal} cart={cart} setCart={setCart} addToCart={addToCart} checkout={checkout} />
-          </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )) : <div className="empty-state product-empty">No matching products. Try a different search or category.</div>}
         </div>
       </section>
     </>
@@ -593,7 +599,6 @@ function OfferCarousel({ slides }) {
         {activeSlide.badge && <div className="offer-meta"><span>{activeSlide.badge}</span></div>}
         <div className="hero-actions">
           <a className="primary-btn" href={activeSlide.buttonRoute || "#products"}><ShoppingCart size={18} /> {activeSlide.buttonLabel || "Shop now"}</a>
-          <button className="secondary-btn" onClick={() => go("signup")}><UserPlus size={18} /> Create account</button>
         </div>
       </div>
       <div className="offer-media">
@@ -753,6 +758,14 @@ function ChatPanel({ user, thread, sendChatMessage }) {
         <textarea value={draft} maxLength={1000} placeholder="Type a message" onChange={(event) => setDraft(event.target.value)} required />
         <button className="primary-btn" type="submit"><Send size={17} /> Send</button>
       </form>
+    </section>
+  );
+}
+
+function CartPage({ cartLines, cartTotal, cart, setCart, addToCart, checkout }) {
+  return (
+    <section className="content-section cart-page">
+      <CartPanel cartLines={cartLines} cartTotal={cartTotal} cart={cart} setCart={setCart} addToCart={addToCart} checkout={checkout} />
     </section>
   );
 }

@@ -164,6 +164,7 @@ textarea:focus-visible {
 
 .nav-pill.active,
 .nav-pill:hover,
+.cart-chip.active,
 .cart-chip:hover {
   color: var(--brand-strong);
   background: #e8f5f3;
@@ -634,6 +635,50 @@ textarea:focus-visible {
   gap: 18px;
 }
 
+.product-shelves {
+  display: grid;
+  gap: 30px;
+}
+
+.category-shelf {
+  min-width: 0;
+}
+
+.shelf-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.shelf-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.32rem, 2.2vw, 1.78rem);
+}
+
+.shelf-heading span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.shelf-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(245px, 295px);
+  gap: 16px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 2px 2px 18px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-color: #b8c7d7 transparent;
+}
+
+.shelf-card {
+  scroll-snap-align: start;
+}
+
 .product-card,
 .panel {
   background: var(--panel);
@@ -646,6 +691,10 @@ textarea:focus-visible {
   display: grid;
   overflow: hidden;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.cart-page {
+  width: min(720px, calc(100% - 36px));
 }
 
 .product-card:hover {
@@ -1480,6 +1529,10 @@ textarea {
 
   .sort-box {
     width: 100%;
+  }
+
+  .shelf-row {
+    grid-auto-columns: minmax(235px, 82vw);
   }
 
   .product-grid,

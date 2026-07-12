@@ -478,7 +478,7 @@ function Header({ user, route, logout, cartCount }) {
 
 function StorePage({ products, carouselSlides, categories, category, setCategory, addToCart, cartLines, cartTotal, cart, setCart, checkout }) {
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("featured");
+  const [sort, setSort] = useState("default");
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const nextProducts = products.filter((product) => {
@@ -489,7 +489,6 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
     return [...nextProducts].sort((a, b) => {
       if (sort === "price-low") return a.price - b.price;
       if (sort === "price-high") return b.price - a.price;
-      if (sort === "stock") return b.stock - a.stock;
       return 0;
     });
   }, [category, products, query, sort]);
@@ -507,10 +506,6 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
       <OfferCarousel slides={carouselSlides} />
 
       <section className="content-section" id="products">
-        <div className="section-heading">
-          <div><p className="eyebrow">Featured inventory</p><h2>Shop by category</h2></div>
-          <span className="result-count">{filteredProducts.length} items</span>
-        </div>
         <div className="shop-toolbar">
           <label className="search-box">
             <Search size={18} />
@@ -519,10 +514,9 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
           <label className="sort-box">
             <SlidersHorizontal size={18} />
             <select value={sort} onChange={(event) => setSort(event.target.value)}>
-              <option value="featured">Featured</option>
+              <option value="default">Default</option>
               <option value="price-low">Price: low to high</option>
               <option value="price-high">Price: high to low</option>
-              <option value="stock">Most stock</option>
             </select>
           </label>
         </div>
@@ -534,7 +528,6 @@ function StorePage({ products, carouselSlides, categories, category, setCategory
             <section className="category-shelf" key={shelf.name}>
               <div className="shelf-heading">
                 <h3>{shelf.name}</h3>
-                <span>{shelf.items.length} items</span>
               </div>
               <div className="shelf-row">
                 {shelf.items.map((product) => (
